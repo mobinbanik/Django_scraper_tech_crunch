@@ -11,14 +11,30 @@ WP_JSON_BASE_URL = BASE_URL + '/wp-json'
 
 # ***SEARCH***
 SEARCH_URL_TECH_CRUNCH = (
-    'https://search.techcrunch.com/search?p={keyword}&b={page}1'
+    'https://search.techcrunch.com/search'
+    '?'
+    'p={keyword}'
+    '&b={page}1'
+)
+POST_BY_CATEGORY_URL_TECH_CRUNCH = (
+    WP_JSON_BASE_URL
+    + '/wp/v2/posts'
+      '?'
+      'categories={category_id}'
+      '&per_page={per_page}'
+      '&page={page}'
+      '&_envelope={envelope}'
+      '&_embed={embed}'
 )
 
 
 # ***CATEGORY***
 # envelope: get Meta data about this json | (true/false)
 ALL_CATEGORIES_JSON_URL_TECH_CRUNCH = (
-    WP_JSON_BASE_URL + '/wp/v2/categories?per_page={count}&_envelope={envelope}'
+    WP_JSON_BASE_URL + '/wp/v2/categories'
+                       '?'
+                       'per_page={count}'
+                       '&_envelope={envelope}'
 )
 CATEGORY_JSON_URL_TECH_CRUNCH = (
     WP_JSON_BASE_URL + '/wp/v2/categories/{id}'
@@ -29,16 +45,25 @@ CATEGORY_JSON_URL_TECH_CRUNCH = (
 # envelope: get Meta data about this json | (true/false)
 # embed: get all data about author and category in "_embedded" tag | (true/false)
 POST_JSON_URL_BY_SLUG_TECH_CRUNCH = (
-    WP_JSON_BASE_URL + '/wp/v2/posts?slug={slug}&_embed={embed}&_envelope={envelope}'
+    WP_JSON_BASE_URL + '/wp/v2/posts'
+                       '?'
+                       'slug={slug}'
+                       '&_embed={embed}'
+                       '&_envelope={envelope}'
 )
 POST_JSON_URL_BY_ID_TECH_CRUNCH = (
-    WP_JSON_BASE_URL + '/wp-json/wp/v2/posts/{id}?_embed={embed}&_envelope={envelope}'
+    WP_JSON_BASE_URL + '/wp-json/wp/v2/posts/{id}'
+                       '?'
+                       '_embed={embed}'
+                       '&_envelope={envelope}'
 )
 
 
 # ***USER***
 USER_JSON_URL_BY_SLUG_TECH_CRUNCH = (
-    WP_JSON_BASE_URL + '/wp-json/tc/v1/users?slug={slug}'
+    WP_JSON_BASE_URL + '/wp-json/tc/v1/users'
+                       '?'
+                       'slug={slug}'
 )
 USER_JSON_URL_BY_ID_TECH_CRUNCH = (
     WP_JSON_BASE_URL + '/wp-json/tc/v1/users/{id}'
