@@ -1,5 +1,3 @@
-from tkinter import Image
-
 from django.db import models
 from abc import abstractmethod
 
@@ -23,7 +21,8 @@ class BaseModel(models.Model):
 class Author(BaseModel):
     full_name = models.CharField(max_length=128, null=False, blank=False)
     twitter_account = models.CharField(max_length=255)
-    json = models.JSONField(default=dict,)
+    json = models.JSONField(default=dict, blank=True, null=True)
+    slug = models.SlugField(null=True, blank=True, unique=True)
 
     def __str__(self):
         return self.full_name
@@ -60,7 +59,7 @@ class Post(BaseModel):
         Author, on_delete=models.CASCADE, related_name="posts",
     )
     thumbnail = models.ForeignKey(
-        ImageFile, on_delete=models.PROTECT, related_name="posts"
+        ImageFile, on_delete=models.PROTECT, related_name="posts_thumbnail"
     )
 
     def __str__(self):
@@ -95,10 +94,7 @@ class SearchedPostByKeyword(BaseModel):
     is_scraped = models.BooleanField(default=False)
     url = models.URLField(null=False, blank=False, max_length=500)
     searched_by_keyword = models.ForeignKey(
-        SearchedKeyword, on_delete=models.CASCADE, related_name="posts",
-    )
-    post = models.ForeignKey(
-        Post, on_delete=models.SET_NULL, related_name="searched_keywords",
+        SearchedKeyword, on_delete=models.CASCADE, related_name="searched_post_by_keyword",
     )
 
     def __str__(self):
@@ -136,8 +132,11 @@ class PostImage(BaseModel):
 
 
 class DailySearch(BaseModel):
+    # new post count to scrape
     new_post_count = models.IntegerField(default=20)
+    # scraped post
     scraped_post_count = models.IntegerField(default=0)
+    is_complete = models.BooleanField(default=False)
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="daily_search"
     )
@@ -159,13 +158,12 @@ class CategoryNewPosts(BaseModel):
 
 
 class PostCategoryNewPost(BaseModel):
-    is_scraped = models.BooleanField(default=False)
     post_url = models.URLField()
     category_new_posts = models.ForeignKey(
-        CategoryNewPosts, on_delete=models.PROTECT, related_name="posts"
+        CategoryNewPosts, on_delete=models.PROTECT, related_name="posts",
     )
     post = models.ForeignKey(
-        Post, on_delete=models.SET_NULL, related_name="category_new_posts",
+        Post, on_delete=models.SET_NULL, related_name="category_new_posts", null=True,
     )
 
     def __str__(self):
