@@ -7,7 +7,7 @@ class SearchByKeywordForm(forms.Form):
     keyword = forms.CharField(label='Keyword', max_length=255)
     page_count = forms.IntegerField(
         label='Page Count',
-        initial=settings.GOOD_READS_DEFAULT_SEARCH_PAGE_COUNT,
+        initial=settings.DEFAULT_SEARCH_PAGE_COUNT_TECH_CRUNCH,
         min_value=1,
-        max_value=settings.GOOD_READS_MAXIMUM_SEARCH_PAGE_COUNT,
+        max_value=settings.MAXIMUM_SEARCH_PAGE_COUNT_TECH_CRUNCH,
     )

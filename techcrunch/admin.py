@@ -9,7 +9,7 @@ from .models import (
     SearchedKeyword,
     SearchedPostByKeyword,
     PostCategory,
-    PostImage,
+    ImagePost,
     DailySearch,
     CategoryNewPosts,
     PostCategoryNewPost,
@@ -135,8 +135,8 @@ class PostCategoryAdmin(BaseAdmin):
     )
 
 
-@register(PostImage)
-class PostImageAdmin(BaseAdmin):
+@register(ImagePost)
+class ImagePostAdmin(BaseAdmin):
     list_display = (
         'image_order',
     )

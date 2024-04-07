@@ -50,16 +50,25 @@ class ImageFile(BaseModel):
 
 
 class Post(BaseModel):
+    id = models.IntegerField(null=False, blank=False, primary_key=True)
     slug = models.SlugField(null=False, unique=True)
     title = models.CharField(null=False, blank=False, max_length=255)
     content = models.TextField(null=True, blank=True)
     published_date = models.DateTimeField()
     json = models.JSONField(default=dict)
     author = models.ForeignKey(
-        Author, on_delete=models.CASCADE, related_name="posts",
+        Author,
+        on_delete=models.CASCADE,
+        related_name="posts",
+        null=True,
+        blank=True,
     )
     thumbnail = models.ForeignKey(
-        ImageFile, on_delete=models.PROTECT, related_name="posts_thumbnail"
+        ImageFile,
+        on_delete=models.PROTECT,
+        related_name="posts_thumbnail",
+        null=True,
+        blank=True,
     )
 
     def __str__(self):
@@ -73,6 +82,7 @@ class Post(BaseModel):
 
 class Keyword(BaseModel):
     title = models.CharField(max_length=255, null=False, blank=False)
+
 
     def __str__(self):
         return self.title
@@ -96,6 +106,9 @@ class SearchedPostByKeyword(BaseModel):
     searched_by_keyword = models.ForeignKey(
         SearchedKeyword, on_delete=models.CASCADE, related_name="searched_post_by_keyword",
     )
+    post = models.ForeignKey(
+        Post, on_delete=models.SET_NULL, related_name="searched_post_by_keyword", null=True,
+    )
 
     def __str__(self):
         return self.title
@@ -118,7 +131,7 @@ class PostCategory(BaseModel):
         )
 
 
-class PostImage(BaseModel):
+class ImagePost(BaseModel):
     image_order = models.IntegerField(default=0)
     post = models.ForeignKey(
         Post, on_delete=models.CASCADE, related_name="images"

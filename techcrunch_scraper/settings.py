@@ -130,9 +130,15 @@ BRIEF_CHAR_COUNT_TITLE = 15
 BRIEF_CHAR_COUNT_CONTENT = 45
 
 DEFAULT_SEARCH_PAGE_COUNT_TECH_CRUNCH = 5
+MAXIMUM_SEARCH_PAGE_COUNT_TECH_CRUNCH = 100
+
 DEFAULT_POST_COUNT_TECH_CRUNCH = 20
 
 # ---URLS---
+
+EMBED = '&_embed=true'
+ENVELOPE = '&_envelope=true'
+
 # BASE URLS
 BASE_URL = 'https://www.techcrunch.com'
 WP_JSON_BASE_URL = BASE_URL + '/wp-json'
@@ -152,8 +158,8 @@ POST_BY_CATEGORY_URL_TECH_CRUNCH = (
       'categories={category_id}'
       '&per_page={per_page}'
       '&page={page}'
-      '&_envelope={envelope}'
-      '&_embed={embed}'
+      '{envelope}'
+      '{embed}'
 )
 
 
@@ -163,7 +169,7 @@ ALL_CATEGORIES_JSON_URL_TECH_CRUNCH = (
     WP_JSON_BASE_URL + '/wp/v2/categories'
                        '?'
                        'per_page={count}'
-                       '&_envelope={envelope}'
+                       '{envelope}'
 )
 CATEGORY_JSON_URL_TECH_CRUNCH = (
     WP_JSON_BASE_URL + '/wp/v2/categories/{id}'
@@ -177,14 +183,14 @@ POST_JSON_URL_BY_SLUG_TECH_CRUNCH = (
     WP_JSON_BASE_URL + '/wp/v2/posts'
                        '?'
                        'slug={slug}'
-                       '&_embed={embed}'
-                       '&_envelope={envelope}'
+                       '{embed}'
+                       '{envelope}'
 )
 POST_JSON_URL_BY_ID_TECH_CRUNCH = (
     WP_JSON_BASE_URL + '/wp-json/wp/v2/posts/{id}'
                        '?'
-                       '_embed={embed}'
-                       '&_envelope={envelope}'
+                       '{embed}'
+                       '{envelope}'
 )
 
 
