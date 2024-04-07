@@ -4,8 +4,13 @@ import requests
 import bs4
 
 from django.conf import settings
+from django.core.files import File
+from django.core.files.temp import NamedTemporaryFile
 
-from .models import SearchedKeyword, SearchedPostByKeyword, Post, Author
+from .models import (
+    SearchedKeyword, SearchedPostByKeyword, Post,
+    Author, ImagePost, ImageFile, FailedSearchedPosts,
+)
 
 
 class ScraperHandler:
@@ -41,8 +46,17 @@ class ScraperHandler:
         print(search_items)
         print('|' * 50)
 
-        for i, search_item in enumerate(search_items, 1):
-            self.get_json_and_create_post(search_item.post_slug)
+        for search_item in search_items:
+            print(search_item.post_slug)
+            try:
+                self.get_json_and_create_post(search_item.post_slug)
+            except Exception as e:
+                FailedSearchedPosts.objects.create(
+                    title=search_item.title,
+                    error_text=e.__str__(),
+                    searched_new_posts=search_item,
+                )
+                print(e)
 
     def extract_search_items(self, search_by_keyword, soup) -> SearchedPostByKeyword:
         search_items = list()
@@ -82,7 +96,7 @@ class ScraperHandler:
             id = post_js['id']
             slug = post_js['slug']
             title = post_js['title']['rendered']
-            content = post_js['content']
+            content = post_js['content']['rendered']
             published_date = post_js['date']
             json = post_js
             # TODO: author_id = post_js['author']
@@ -100,6 +114,7 @@ class ScraperHandler:
                 json=json,
                 author=author,
             )
+            self.extract_image_from_content(content, post)
             print('*' * 50)
             print('*' * 50)
             print('*' * 50)
@@ -116,6 +131,38 @@ class ScraperHandler:
     def parse_slug_from_url(url) -> str:
         slug = re.findall('//techcrunch.com/.*/(.*)/$', url)
         return slug[0]
+
+    @staticmethod
+    def parse_image_name_from_url(url) -> str:
+        name = re.findall('//techcrunch.com/.*/(.*\.[a-z]*).*$', url)
+        return name[0]
+
+    def extract_image_from_content(self, content: str, post: Post):
+        soup = bs4.BeautifulSoup(content, 'html.parser')
+        images = soup.find_all('img')
+
+        for i, image in enumerate(images):
+            src = image['src']
+
+            response = requests.get(src)
+
+            img_temp = NamedTemporaryFile(delete=True)
+            img_temp.write(response.content)
+            img_temp.flush()
+
+            image_file, _ = ImageFile.objects.get_or_create(
+                url=src,
+                file_name=self.parse_image_name_from_url(src),
+                post_id=post.id,
+            )
+            image_file.image.save("image.jpg", File(img_temp), save=True)
+
+            image_post, _ = ImagePost.objects.get_or_create(
+                post=post,
+                image=image_file,
+                image_order=i,
+                title=post.title,
+            )
 
     def __str__(self):
         return "Scraper"

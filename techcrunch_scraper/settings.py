@@ -125,6 +125,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+
 # Number of characters to display summary
 BRIEF_CHAR_COUNT_TITLE = 15
 BRIEF_CHAR_COUNT_CONTENT = 45

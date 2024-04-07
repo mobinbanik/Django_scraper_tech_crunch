@@ -14,8 +14,10 @@ from .models import (
     CategoryNewPosts,
     PostCategoryNewPost,
     FailedCategoryNewPosts,
+    FailedSearchedPosts,
     ScrapedPosts,
     ScrapedPostsCategory,
+
 )
 
 
@@ -62,6 +64,7 @@ class CategoryAdmin(BaseAdmin):
 @register(ImageFile)
 class ImageFileAdmin(BaseAdmin):
     list_display = (
+        'img_preview',
         'file_name',
     )
 
@@ -138,6 +141,8 @@ class PostCategoryAdmin(BaseAdmin):
 @register(ImagePost)
 class ImagePostAdmin(BaseAdmin):
     list_display = (
+        'post_id',
+        'title',
         'image_order',
     )
     search_fields = (
@@ -189,6 +194,14 @@ class FailedCategoryNewPostsAdmin(BaseAdmin):
     search_fields = (
         'category_new_posts__title',
         'category_new_posts__daily_search__category__name',
+    )
+
+
+@register(FailedSearchedPosts)
+class FailedSearchedPostsAdmin(BaseAdmin):
+    list_display = (
+        'title',
+        'error_text',
     )
 
 

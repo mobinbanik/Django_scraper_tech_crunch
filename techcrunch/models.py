@@ -2,6 +2,7 @@ from django.db import models
 from abc import abstractmethod
 
 from django.conf import settings
+from django.utils.html import mark_safe
 
 
 # Create your models here.
@@ -43,7 +44,12 @@ class Category(BaseModel):
 class ImageFile(BaseModel):
     url = models.URLField(null=False)
     file_name = models.CharField(max_length=255, null=False, blank=False)
-    local_path = models.CharField(max_length=255, null=False, blank=False)
+    local_path = models.CharField(max_length=255, null=True, blank=True)
+    image = models.ImageField(upload_to='images/')
+    post_id = models.IntegerField(default=0)
+
+    def img_preview(self):  # new
+        return mark_safe(f'<img src = "{self.image.url}" style="max-width:200px; max-height:200px"/>')
 
     def __str__(self):
         return self.file_name
@@ -82,7 +88,6 @@ class Post(BaseModel):
 
 class Keyword(BaseModel):
     title = models.CharField(max_length=255, null=False, blank=False)
-
 
     def __str__(self):
         return self.title
@@ -133,8 +138,9 @@ class PostCategory(BaseModel):
 
 class ImagePost(BaseModel):
     image_order = models.IntegerField(default=0)
+    title = models.CharField(max_length=127)
     post = models.ForeignKey(
-        Post, on_delete=models.CASCADE, related_name="images"
+        Post, on_delete=models.PROTECT, related_name="images"
     )
     image = models.ForeignKey(
         ImageFile, on_delete=models.CASCADE, related_name="posts"
@@ -193,6 +199,16 @@ class FailedCategoryNewPosts(BaseModel):
     def __str__(self):
         return self.title
 
+
+class FailedSearchedPosts(BaseModel):
+    title = models.CharField(max_length=127)
+    error_text = models.TextField(blank=True)
+    searched_new_posts = models.ForeignKey(
+        SearchedPostByKeyword, on_delete=models.PROTECT, related_name="faild_posts",
+    )
+
+    def __str__(self):
+        return self.title
 
 class ScrapedPosts(BaseModel):
     slug = models.SlugField(null=False, unique=True)
