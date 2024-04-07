@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<HEAD>
+    <meta charset="UTF-8">
+    <title> Search By Keyword</title>
+</HEAD>
+<body>
+    <form action="" method="post">
+        {% csrf_token %}
+        <p>
+            do you want to update all category???
+        </p>
+        <p>
+            plz, do this for first time and do not update twice...
+        </p>
+        <p> are you sure?</p>
+        {{ form.as_p }}
+        <input type="submit" value="Update">
+    </form>
+
+</body>
+</html>

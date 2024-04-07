@@ -51,12 +51,15 @@ class AuthorAdmin(BaseAdmin):
 @register(Category)
 class CategoryAdmin(BaseAdmin):
     list_display = (
+        'tech_crunch_id',
         'name',
-        'post_count',
+        'description',
+        'local_post_count',
+        'online_post_count',
+        'updated_at'
     )
     search_fields = (
         'name',
-        'post_count',
         'description',
     )
 

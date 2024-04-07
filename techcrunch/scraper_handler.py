@@ -1,4 +1,5 @@
 import re
+from http.client import HTTPException
 
 import requests
 import bs4
@@ -8,14 +9,56 @@ from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
 
 from .models import (
-    SearchedKeyword, SearchedPostByKeyword, Post,
-    Author, ImagePost, ImageFile, FailedSearchedPosts,
+    SearchedKeyword, SearchedPostByKeyword, Post, Author,
+    ImagePost, ImageFile, FailedSearchedPosts, Category,
+    PostCategory, FailedCategoryNewPosts,
 )
 
 
 class ScraperHandler:
     def __init__(self):
         pass
+
+    def get_category_json_from_tech_crunch(self, category: Category):
+        response = self.send_request(
+            settings.CATEGORY_JSON_URL_TECH_CRUNCH.format(id=category.tech_crunch_id)
+        )
+        if response.status_code == 200:
+            return response.json()
+
+    def create_or_update_category_list(self, count):
+        response = self.send_request(
+            settings.ALL_CATEGORIES_JSON_URL_TECH_CRUNCH.format(
+                count=count,
+                envelope=settings.ENVELOPE_FALSE,
+            )
+        )
+        categories = response.json()
+
+        for category in categories:
+            print(type(category["slug"]))
+            cat, created = Category.objects.get_or_create(
+                slug=category["slug"],
+            )
+            if created:
+                cat.name = category["name"]
+                cat.tech_crunch_id = category["id"]
+                cat.description = category["description"]
+                cat.json = category
+                cat.save()
+            elif not created:
+                cat.json = category
+                cat.save()
+
+    def update_posts_for_all_categories(self):
+        categories = Category.objects.all()
+        for category in categories:
+            self.update_posts_for_one_category(category)
+
+    def update_posts_for_one_category(self, category):
+        cat_js = self.get_category_json_from_tech_crunch(category)
+        post_count_to_get = cat_js["count"]
+
 
     @staticmethod
     def send_request(url) -> requests.Response:
@@ -84,8 +127,8 @@ class ScraperHandler:
         response = self.send_request(
             settings.POST_JSON_URL_BY_SLUG_TECH_CRUNCH.format(
                 slug=slug,
-                envelope=settings.ENVELOPE,
-                embed=settings.EMBED,
+                envelope=settings.ENVELOPE_TRUE,
+                embed=settings.EMBED_TRUE,
             )
         )
         if response.status_code == 200:

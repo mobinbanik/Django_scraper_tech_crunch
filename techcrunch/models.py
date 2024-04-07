@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils.html import mark_safe
 from bs4 import BeautifulSoup
 
+
 # Create your models here.
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -31,14 +32,19 @@ class Author(BaseModel):
 
 class Category(BaseModel):
     slug = models.SlugField(null=False, unique=True)
-    name = models.CharField(null=False, blank=False, max_length=128)
-    tech_crunch_id = models.IntegerField(null=False, blank=False)
+    name = models.CharField(null=True, blank=True, max_length=128)
+    tech_crunch_id = models.IntegerField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    post_count = models.IntegerField(null=False, blank=False, default=0)
     json = models.JSONField(default=dict)
 
+    def local_post_count(self):
+        len(PostCategory.objects.filter(category=self))
+
+    def online_post_count(self):
+        return self.json['count']
+
     def __str__(self):
-        return self.name
+        return self.slug
 
 
 class ImageFile(BaseModel):
@@ -90,7 +96,6 @@ class Post(BaseModel):
 
     def __str__(self):
         return self.title
-
 
 
 class Keyword(BaseModel):
