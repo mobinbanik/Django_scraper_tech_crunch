@@ -3,7 +3,7 @@ from abc import abstractmethod
 
 from django.conf import settings
 from django.utils.html import mark_safe
-
+from bs4 import BeautifulSoup
 
 # Create your models here.
 class BaseModel(models.Model):
@@ -47,9 +47,13 @@ class ImageFile(BaseModel):
     local_path = models.CharField(max_length=255, null=True, blank=True)
     image = models.ImageField(upload_to='images/')
     post_id = models.IntegerField(default=0)
+    is_scraped = models.BooleanField(default=False)
 
-    def img_preview(self):  # new
-        return mark_safe(f'<img src = "{self.image.url}" style="max-width:200px; max-height:200px"/>')
+    def img_preview(self):
+        try:
+            return mark_safe(f'<img src = "{self.image.url}" style="max-width:200px; max-height:200px"/>')
+        except Exception as e:
+            return e.__str__()
 
     def __str__(self):
         return self.file_name
@@ -77,13 +81,16 @@ class Post(BaseModel):
         blank=True,
     )
 
+    def img_preview(self):  # new
+        return mark_safe(f'<img src = "{self.thumbnail.image.url}" style="max-width:200px; max-height:200px"/>')
+
+    def get_raw_text(self):
+        soup = BeautifulSoup(self.content, "html.parser")
+        return soup.text
+
     def __str__(self):
         return self.title
 
-    @property
-    def raw_content(self):
-        # probably delete content and get it from json
-        return self.content
 
 
 class Keyword(BaseModel):

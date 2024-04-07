@@ -66,16 +66,19 @@ class ImageFileAdmin(BaseAdmin):
     list_display = (
         'img_preview',
         'file_name',
+        'post_id',
     )
 
 
 @register(Post)
 class PostAdmin(BaseAdmin):
     list_display = (
-        'slug',
-        'author',
+        'img_preview',
         'title',
+        'author',
         'published_date',
+        'slug',
+        'is_active',
     )
     list_filter = (
         'published_date',
@@ -84,7 +87,7 @@ class PostAdmin(BaseAdmin):
     search_fields = (
         'author',
         'title',
-        'content'
+        'content',
     )
 
 

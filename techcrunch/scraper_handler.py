@@ -48,15 +48,15 @@ class ScraperHandler:
 
         for search_item in search_items:
             print(search_item.post_slug)
-            try:
-                self.get_json_and_create_post(search_item.post_slug)
-            except Exception as e:
-                FailedSearchedPosts.objects.create(
-                    title=search_item.title,
-                    error_text=e.__str__(),
-                    searched_new_posts=search_item,
-                )
-                print(e)
+            # try:
+            self.get_json_and_create_post(search_item.post_slug)
+            # except Exception as e:
+            #     FailedSearchedPosts.objects.create(
+            #         title=search_item.title,
+            #         error_text=e.__str__(),
+            #         searched_new_posts=search_item,
+            #     )
+            #     print(e)
 
     def extract_search_items(self, search_by_keyword, soup) -> SearchedPostByKeyword:
         search_items = list()
@@ -100,11 +100,23 @@ class ScraperHandler:
             published_date = post_js['date']
             json = post_js
             # TODO: author_id = post_js['author']
-            # TODO get and create author
+            # Get or create author
+            author_js = post_js['_embedded']['author'][0]
             author, _ = Author.objects.get_or_create(
-                full_name='mobin banikarim',
+                full_name=author_js['name'],
+                twitter_account=author_js['twitter'],
+                json=author_js,
+                slug=author_js['slug'],
             )
             # TODO : thumbnail =
+            thumbnail_url = post_js['_embedded']['wp:featuredmedia'][0]['source_url']
+            thumbnail, _ = ImageFile.objects.get_or_create(
+                url=thumbnail_url,
+                file_name=self.parse_image_name_from_url(thumbnail_url),
+                post_id=id,
+                is_scraped=False,
+            )
+            self.get_image_file_from_url(thumbnail_url, thumbnail)
             post, flag = Post.objects.get_or_create(
                 id=id,
                 slug=slug,
@@ -113,6 +125,7 @@ class ScraperHandler:
                 published_date=published_date,
                 json=json,
                 author=author,
+                thumbnail=thumbnail,
             )
             self.extract_image_from_content(content, post)
             print('*' * 50)
@@ -135,6 +148,9 @@ class ScraperHandler:
     @staticmethod
     def parse_image_name_from_url(url) -> str:
         name = re.findall('//techcrunch.com/.*/(.*\.[a-z]*).*$', url)
+        print(1000*'"')
+        print(name)
+        print(url)
         return name[0]
 
     def extract_image_from_content(self, content: str, post: Post):
@@ -143,26 +159,29 @@ class ScraperHandler:
 
         for i, image in enumerate(images):
             src = image['src']
-
-            response = requests.get(src)
-
-            img_temp = NamedTemporaryFile(delete=True)
-            img_temp.write(response.content)
-            img_temp.flush()
-
             image_file, _ = ImageFile.objects.get_or_create(
                 url=src,
                 file_name=self.parse_image_name_from_url(src),
                 post_id=post.id,
+                is_scraped=True,
             )
-            image_file.image.save("image.jpg", File(img_temp), save=True)
-
+            self.get_image_file_from_url(src, image_file)
             image_post, _ = ImagePost.objects.get_or_create(
                 post=post,
                 image=image_file,
                 image_order=i,
                 title=post.title,
             )
+
+    @staticmethod
+    def get_image_file_from_url(url: str, image_file: ImageFile):
+        response = requests.get(url)
+        img_temp = NamedTemporaryFile(delete=True)
+        img_temp.write(response.content)
+        img_temp.flush()
+        img_temp.name = image_file.file_name
+        image_file.image.save("image.jpg", File(img_temp), save=True)
+        img_temp.close()
 
     def __str__(self):
         return "Scraper"
