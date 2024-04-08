@@ -11,8 +11,7 @@ from .models import (
     PostCategory,
     ImagePost,
     DailySearch,
-    CategoryNewPosts,
-    PostCategoryNewPost,
+    PostDailySearch,
     FailedCategoryNewPosts,
     FailedSearchedPosts,
     ScrapedPosts,
@@ -64,15 +63,6 @@ class CategoryAdmin(BaseAdmin):
     )
 
 
-@register(ImageFile)
-class ImageFileAdmin(BaseAdmin):
-    list_display = (
-        'img_preview',
-        'file_name',
-        'post_id',
-    )
-
-
 @register(Post)
 class PostAdmin(BaseAdmin):
     list_display = (
@@ -91,6 +81,21 @@ class PostAdmin(BaseAdmin):
         'author',
         'title',
         'content',
+    )
+
+
+@register(PostCategory)
+class PostCategoryAdmin(BaseAdmin):
+    list_display = (
+        'title',
+        'category_order',
+    )
+    list_filter = (
+        'category',
+    )
+    search_fields = (
+        'category_name',
+        'post_title',
     )
 
 
@@ -130,17 +135,12 @@ class SearchedPostByKeywordAdmin(BaseAdmin):
     )
 
 
-@register(PostCategory)
-class PostCategoryAdmin(BaseAdmin):
+@register(ImageFile)
+class ImageFileAdmin(BaseAdmin):
     list_display = (
-        'category_order',
-    )
-    list_filter = (
-        'category',
-    )
-    search_fields = (
-        'category_name',
-        'post_title',
+        'img_preview',
+        'file_name',
+        'post_id',
     )
 
 
@@ -159,8 +159,8 @@ class ImagePostAdmin(BaseAdmin):
 @register(DailySearch)
 class DailySearchAdmin(BaseAdmin):
     list_display = (
-        'new_post_count',
-        'scraped_post_count',
+        'is_complete',
+        'created_at',
     )
     list_filter = (
         'is_complete',
@@ -170,22 +170,8 @@ class DailySearchAdmin(BaseAdmin):
     )
 
 
-@register(CategoryNewPosts)
-class CategoryNewPostsAdmin(BaseAdmin):
-    list_display = (
-        'title',
-        'is_scraped',
-    )
-    list_filter = (
-        'is_scraped',
-    )
-    search_fields = (
-        'daily_search__category__name',
-    )
-
-
-@register(PostCategoryNewPost)
-class PostCategoryNewPostAdmin(BaseAdmin):
+@register(PostDailySearch)
+class PostDailySearchAdmin(BaseAdmin):
     search_fields = (
         'post__title',
     )

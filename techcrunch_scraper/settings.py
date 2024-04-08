@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+# TODO: if you downloaded this project you should do the following:
+# TODO: - Use sample_settings.py to create your own local settings
+from .local_settings import CELERY_LOCAL_TIMEZONE, CELERY_LOCAL_BROKER_URL
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,6 +44,10 @@ INSTALLED_APPS = [
 
     # Local
     'techcrunch.apps.TechcrunchConfig',
+
+    # Trusted Apps
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -209,3 +217,13 @@ USER_JSON_URL_BY_ID_TECH_CRUNCH = (
     WP_JSON_BASE_URL + '/wp-json/tc/v1/users/{id}'
 )
 
+# Celery configurations
+# Celery Configuration Options
+CELERY_BROKER_URL = CELERY_LOCAL_BROKER_URL
+CELERY_TIMEZONE = CELERY_LOCAL_TIMEZONE
+CELERY_TASK_TIME_LIMIT = 60 * 60
+
+CELERY_RESULT_BACKEND = 'django-db'
+# CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'

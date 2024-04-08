@@ -1,5 +1,5 @@
 import re
-from http.client import HTTPException
+import logging
 
 import requests
 import bs4
@@ -11,13 +11,20 @@ from django.core.files.temp import NamedTemporaryFile
 from .models import (
     SearchedKeyword, SearchedPostByKeyword, Post, Author,
     ImagePost, ImageFile, FailedSearchedPosts, Category,
-    PostCategory, FailedCategoryNewPosts,
+    PostCategory, FailedCategoryNewPosts, DailySearch,
+    PostDailySearch, ScrapedPosts, ScrapedPostsCategory,
 )
 
 
 class ScraperHandler:
     def __init__(self):
-        pass
+        # TODO: ADD LOG
+        log = logging.log()
+
+    @staticmethod
+    def send_request(url) -> requests.Response:
+        print('URL: ', url)
+        return requests.get(url)
 
     def get_category_json_from_tech_crunch(self, category: Category):
         response = self.send_request(
@@ -53,17 +60,42 @@ class ScraperHandler:
     def update_posts_for_all_categories(self):
         categories = Category.objects.all()
         for category in categories:
-            self.update_posts_for_one_category(category)
+            daily_search = DailySearch.objects.create(
+                category=category,
+                title=category.name,
+            )
+            try:
+                self.update_posts_for_one_category(category, daily_search)
+            except Exception as e:
+                FailedCategoryNewPosts.objects.create(
+                    daily_search=daily_search,
+                    title=category.name,
+                    error_text=e.__str__(),
+                )
 
-    def update_posts_for_one_category(self, category):
+    def update_posts_for_one_category(self, category, daily_search: DailySearch):
         cat_js = self.get_category_json_from_tech_crunch(category)
-        post_count_to_get = cat_js["count"]
-
-
-    @staticmethod
-    def send_request(url) -> requests.Response:
-        print('URL: ', url)
-        return requests.get(url)
+        post_count_to_get = cat_js["count"] - category.online_post_count()
+        print(post_count_to_get)
+        if post_count_to_get > 0:
+            response = self.send_request(
+                settings.POST_BY_CATEGORY_URL_TECH_CRUNCH.format(
+                    category_id=category.tech_crunch_id,
+                    per_page=post_count_to_get,
+                    page=1,
+                    envelope=settings.ENVELOPE_FALSE,
+                    embed=settings.EMBED_TRUE,
+                )
+            )
+            posts = response.json()
+            for post in posts:
+                temp_post = self.parse_post_json(post)
+                PostDailySearch.objects.create(
+                    daily_search=daily_search,
+                    post=temp_post,
+                )
+            category.json = cat_js
+            category.save()
 
     def search_by_keyword(self, search_by_keyword: SearchedKeyword):
         search_items = list()
@@ -84,22 +116,16 @@ class ScraperHandler:
                     soup,
                 )
 
-        print('|' * 50)
-        print('posts found:')
-        print(search_items)
-        print('|' * 50)
-
         for search_item in search_items:
-            print(search_item.post_slug)
-            # try:
-            self.get_json_and_create_post(search_item.post_slug)
-            # except Exception as e:
-            #     FailedSearchedPosts.objects.create(
-            #         title=search_item.title,
-            #         error_text=e.__str__(),
-            #         searched_new_posts=search_item,
-            #     )
-            #     print(e)
+            try:
+                self.get_json_and_create_post_by_slug(search_item.post_slug)
+            except Exception as e:
+                FailedSearchedPosts.objects.create(
+                    title=search_item.title,
+                    error_text=e.__str__(),
+                    searched_new_posts=search_item,
+                )
+                print(e)
 
     def extract_search_items(self, search_by_keyword, soup) -> SearchedPostByKeyword:
         search_items = list()
@@ -122,66 +148,89 @@ class ScraperHandler:
             print(slug)
         return search_items
 
-    def get_json_and_create_post(self, slug):
+    def get_json_and_create_post_by_slug(self, slug):
         print('GET A POST:')
         response = self.send_request(
             settings.POST_JSON_URL_BY_SLUG_TECH_CRUNCH.format(
                 slug=slug,
-                envelope=settings.ENVELOPE_TRUE,
+                envelope=settings.ENVELOPE_FALSE,
                 embed=settings.EMBED_TRUE,
             )
         )
         if response.status_code == 200:
             post_js = response.json()
-            # print(post_js)
-            # print('*' * 50)
-            post_js = post_js['body'][0]
-            id = post_js['id']
-            slug = post_js['slug']
-            title = post_js['title']['rendered']
-            content = post_js['content']['rendered']
-            published_date = post_js['date']
-            json = post_js
-            # TODO: author_id = post_js['author']
-            # Get or create author
-            author_js = post_js['_embedded']['author'][0]
-            author, _ = Author.objects.get_or_create(
-                full_name=author_js['name'],
-                twitter_account=author_js['twitter'],
-                json=author_js,
-                slug=author_js['slug'],
+            post_js = post_js[0]
+            self.parse_post_json(post_js)
+        else:
+            raise Exception('status code:', response.status_code)
+
+    def parse_post_json(self, post_js):
+        # Get post detail
+        id = post_js['id']
+        slug = post_js['slug']
+        title = post_js['title']['rendered']
+        content = post_js['content']['rendered']
+        published_date = post_js['date']
+        json = post_js
+        # Get or create author
+        author_js = post_js['_embedded']['author'][0]
+        author, _ = Author.objects.get_or_create(
+            full_name=author_js['name'],
+            twitter_account=author_js['twitter'],
+            json=author_js,
+            slug=author_js['slug'],
+        )
+        # Get ot create thumbnail
+        thumbnail_url = post_js['_embedded']['wp:featuredmedia'][0]['source_url']
+        thumbnail, _ = ImageFile.objects.get_or_create(
+            url=thumbnail_url,
+            file_name=self.parse_image_name_from_url(thumbnail_url),
+            post_id=id,
+            is_scraped=False,
+        )
+        self.get_image_file_from_url(thumbnail_url, thumbnail)
+        # Get or create post
+        post, created = Post.objects.get_or_create(
+            id=id,
+            slug=slug,
+            title=title,
+            content=content,
+            published_date=published_date,
+            json=json,
+            author=author,
+            thumbnail=thumbnail,
+        )
+        if created:
+            categories = post_js['categories']
+            for i, category_id in enumerate(categories):
+                category = Category.objects.get(
+                    tech_crunch_id=category_id,
+                )
+                PostCategory.objects.create(
+                    post=post,
+                    category=category,
+                    category_order=i,
+                    title=category.name + ' -> ' + post.title,
+                )
+
+        # Get post images
+        self.extract_image_from_content(content, post)
+
+        # Add it to constant database table
+        scraped_post, created = ScrapedPosts.objects.get_or_create(
+            slug=slug,
+        )
+        if created:
+            categories = post_js['categories']
+            for category_id in categories:
+                category = Category.objects.get(
+                    tech_crunch_id=category_id,
+                )
+            scraped_post_category, _ = ScrapedPostsCategory.objects.get_or_create(
+                scraped_post=scraped_post,
+                category=category,
             )
-            # TODO : thumbnail =
-            thumbnail_url = post_js['_embedded']['wp:featuredmedia'][0]['source_url']
-            thumbnail, _ = ImageFile.objects.get_or_create(
-                url=thumbnail_url,
-                file_name=self.parse_image_name_from_url(thumbnail_url),
-                post_id=id,
-                is_scraped=False,
-            )
-            self.get_image_file_from_url(thumbnail_url, thumbnail)
-            post, flag = Post.objects.get_or_create(
-                id=id,
-                slug=slug,
-                title=title,
-                content=content,
-                published_date=published_date,
-                json=json,
-                author=author,
-                thumbnail=thumbnail,
-            )
-            self.extract_image_from_content(content, post)
-            print('*' * 50)
-            print('*' * 50)
-            print('*' * 50)
-            print(flag)
-            print('*' * 50)
-            print('*' * 50)
-            print('*' * 50)
-            print(post)
-            print('*' * 50)
-        # TODO create Author
-        # TODO IF STATUS CODE != 200 add it to failed
+        return post
 
     @staticmethod
     def parse_slug_from_url(url) -> str:

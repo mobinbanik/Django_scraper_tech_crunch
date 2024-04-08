@@ -38,7 +38,7 @@ class Category(BaseModel):
     json = models.JSONField(default=dict)
 
     def local_post_count(self):
-        len(PostCategory.objects.filter(category=self))
+        return len(PostCategory.objects.filter(category=self))
 
     def online_post_count(self):
         return self.json['count']
@@ -98,6 +98,38 @@ class Post(BaseModel):
         return self.title
 
 
+class ImagePost(BaseModel):
+    image_order = models.IntegerField(default=0)
+    title = models.CharField(max_length=127)
+    post = models.ForeignKey(
+        Post, on_delete=models.PROTECT, related_name="images"
+    )
+    image = models.ForeignKey(
+        ImageFile, on_delete=models.CASCADE, related_name="posts"
+    )
+
+    def __str__(self):
+        return self.post.title + " - " + self.image.file_name
+
+
+class PostCategory(BaseModel):
+    category_order = models.IntegerField(default=0)
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name="categories"
+    )
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name="posts"
+    )
+    title = models.CharField(max_length=255, null=False, blank=False)
+
+    def __str__(self):
+        return (
+            self.category.name
+            + " - "
+            + self.post.title[0:settings.BRIEF_CHAR_COUNT_TITLE]
+        )
+
+
 class Keyword(BaseModel):
     title = models.CharField(max_length=255, null=False, blank=False)
 
@@ -131,67 +163,20 @@ class SearchedPostByKeyword(BaseModel):
         return self.title
 
 
-class PostCategory(BaseModel):
-    category_order = models.IntegerField(default=0)
-    post = models.ForeignKey(
-        Post, on_delete=models.CASCADE, related_name="categories"
-    )
-    category = models.ForeignKey(
-        Category, on_delete=models.CASCADE, related_name="posts"
-    )
-
-    def __str__(self):
-        return (
-            self.category.name
-            + " - "
-            + self.post.title[0:settings.BRIEF_CHAR_COUNT_TITLE]
-        )
-
-
-class ImagePost(BaseModel):
-    image_order = models.IntegerField(default=0)
-    title = models.CharField(max_length=127)
-    post = models.ForeignKey(
-        Post, on_delete=models.PROTECT, related_name="images"
-    )
-    image = models.ForeignKey(
-        ImageFile, on_delete=models.CASCADE, related_name="posts"
-    )
-
-    def __str__(self):
-        return self.post.title + " - " + self.image.file_name
-
-
 class DailySearch(BaseModel):
-    # new post count to scrape
-    new_post_count = models.IntegerField(default=20)
-    # scraped post
-    scraped_post_count = models.IntegerField(default=0)
     is_complete = models.BooleanField(default=False)
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="daily_search"
     )
+    title = models.CharField(max_length=255, null=False, blank=False)
 
     def __str__(self):
-        return self.category.name + " - " + self.new_post_count
+        return self.category.name + " - " + self.created_at
 
 
-class CategoryNewPosts(BaseModel):
-    title = models.CharField(max_length=127)
-    is_scraped = models.BooleanField(default=False)
-    json_envelope_header = models.JSONField(default=dict)
+class PostDailySearch(BaseModel):
     daily_search = models.ForeignKey(
-        DailySearch, on_delete=models.CASCADE, related_name="posts",
-    )
-
-    def __str__(self):
-        return self.title
-
-
-class PostCategoryNewPost(BaseModel):
-    post_url = models.URLField()
-    category_new_posts = models.ForeignKey(
-        CategoryNewPosts, on_delete=models.PROTECT, related_name="posts",
+        DailySearch, on_delete=models.PROTECT, related_name="posts",
     )
     post = models.ForeignKey(
         Post, on_delete=models.SET_NULL, related_name="category_new_posts", null=True,
@@ -204,8 +189,8 @@ class PostCategoryNewPost(BaseModel):
 class FailedCategoryNewPosts(BaseModel):
     title = models.CharField(max_length=127)
     error_text = models.TextField(blank=True)
-    category_new_posts = models.ForeignKey(
-        CategoryNewPosts, on_delete=models.CASCADE, related_name="faild_posts",
+    daily_search = models.ForeignKey(
+        DailySearch, on_delete=models.CASCADE, related_name="failed_posts",
     )
 
     def __str__(self):
@@ -216,11 +201,12 @@ class FailedSearchedPosts(BaseModel):
     title = models.CharField(max_length=127)
     error_text = models.TextField(blank=True)
     searched_new_posts = models.ForeignKey(
-        SearchedPostByKeyword, on_delete=models.PROTECT, related_name="faild_posts",
+        SearchedPostByKeyword, on_delete=models.PROTECT, related_name="failed_posts",
     )
 
     def __str__(self):
         return self.title
+
 
 class ScrapedPosts(BaseModel):
     slug = models.SlugField(null=False, unique=True)
