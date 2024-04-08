@@ -29,6 +29,10 @@ class Author(BaseModel):
     def __str__(self):
         return self.full_name
 
+    class Meta:
+        verbose_name = 'Author'
+        verbose_name_plural = 'Authors'
+
 
 class Category(BaseModel):
     slug = models.SlugField(null=False, unique=True)
@@ -45,6 +49,10 @@ class Category(BaseModel):
 
     def __str__(self):
         return self.slug
+
+    class Meta:
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
 
 
 class ImageFile(BaseModel):
@@ -63,6 +71,10 @@ class ImageFile(BaseModel):
 
     def __str__(self):
         return self.file_name
+
+    class Meta:
+        verbose_name = 'Image File'
+        verbose_name_plural = 'Image Files'
 
 
 class Post(BaseModel):
@@ -97,6 +109,10 @@ class Post(BaseModel):
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name = 'Post'
+        verbose_name_plural = 'Posts'
+
 
 class ImagePost(BaseModel):
     image_order = models.IntegerField(default=0)
@@ -110,6 +126,10 @@ class ImagePost(BaseModel):
 
     def __str__(self):
         return self.post.title + " - " + self.image.file_name
+
+    class Meta:
+        verbose_name = 'Image Post'
+        verbose_name_plural = 'Images Post'
 
 
 class PostCategory(BaseModel):
@@ -129,12 +149,20 @@ class PostCategory(BaseModel):
             + self.post.title[0:settings.BRIEF_CHAR_COUNT_TITLE]
         )
 
+    class Meta:
+        verbose_name = 'Post Category'
+        verbose_name_plural = 'Post Categories'
+
 
 class Keyword(BaseModel):
     title = models.CharField(max_length=255, null=False, blank=False)
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        verbose_name = 'Keyword'
+        verbose_name_plural = 'Keywords'
 
 
 class SearchedKeyword(BaseModel):
@@ -145,6 +173,10 @@ class SearchedKeyword(BaseModel):
 
     def __str__(self):
         return self.keyword.title
+
+    class Meta:
+        verbose_name = 'Searched Keyword'
+        verbose_name_plural = 'Searched Keywords'
 
 
 class SearchedPostByKeyword(BaseModel):
@@ -162,6 +194,10 @@ class SearchedPostByKeyword(BaseModel):
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name = 'Searched Post By Keyword'
+        verbose_name_plural = 'Searched Post By Keywords'
+
 
 class DailySearch(BaseModel):
     is_complete = models.BooleanField(default=False)
@@ -172,6 +208,10 @@ class DailySearch(BaseModel):
 
     def __str__(self):
         return self.category.name + " - " + self.created_at
+
+    class Meta:
+        verbose_name = 'Daily Search'
+        verbose_name_plural = 'Daily Searches'
 
 
 class PostDailySearch(BaseModel):
@@ -185,6 +225,10 @@ class PostDailySearch(BaseModel):
     def __str__(self):
         return self.post.title
 
+    class Meta:
+        verbose_name = 'Post Daily Search'
+        verbose_name_plural = 'Post Daily Searches'
+
 
 class FailedCategoryNewPosts(BaseModel):
     title = models.CharField(max_length=127)
@@ -195,6 +239,10 @@ class FailedCategoryNewPosts(BaseModel):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        verbose_name = 'Failed Category New Post'
+        verbose_name_plural = 'Failed Category New Posts'
 
 
 class FailedSearchedPosts(BaseModel):
@@ -207,12 +255,20 @@ class FailedSearchedPosts(BaseModel):
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name = 'Failed Searched Post'
+        verbose_name_plural = 'Failed Searched Posts'
+
 
 class ScrapedPosts(BaseModel):
     slug = models.SlugField(null=False, unique=True)
 
     def __str__(self):
         return self.slug
+
+    class Meta:
+        verbose_name = 'Scraped Post'
+        verbose_name_plural = 'Scraped Posts'
 
 
 class ScrapedPostsCategory(BaseModel):
@@ -224,4 +280,8 @@ class ScrapedPostsCategory(BaseModel):
     )
 
     def __str__(self):
-        return self.category.name + " - " + self.scraped_posts.slug
+        return self.category.name + " - " + self.scraped_post.slug
+
+    class Meta:
+        verbose_name = 'Scraped Post Category'
+        verbose_name_plural = 'Scraped Posts Categories'

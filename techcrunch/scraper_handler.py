@@ -283,8 +283,13 @@ class ScraperHandler:
         img_temp = NamedTemporaryFile(delete=True)
         img_temp.write(response.content)
         img_temp.flush()
-        img_temp.name = image_file.file_name
-        image_file.image.save("image.jpg", File(img_temp), save=True)
+        image_file.image.save(
+            image_file.file_name,
+            File(img_temp),
+            save=True,
+        )
+        image_file.local_path = image_file.image.path
+        image_file.save()
         img_temp.close()
 
     def __str__(self):

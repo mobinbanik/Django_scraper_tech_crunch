@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     # Trusted Apps
     'django_celery_beat',
     'django_celery_results',
+    'import_export',
 ]
 
 MIDDLEWARE = [

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin import register
+from import_export.admin import ImportExportModelAdmin
 from .models import (
     Author,
     Category,
@@ -61,7 +62,7 @@ class CategoryAdmin(BaseAdmin):
 
 
 @register(Post)
-class PostAdmin(BaseAdmin):
+class PostAdmin(BaseAdmin, ImportExportModelAdmin):
     list_display = (
         'img_preview',
         'title',
@@ -82,7 +83,7 @@ class PostAdmin(BaseAdmin):
 
 
 @register(PostCategory)
-class PostCategoryAdmin(BaseAdmin):
+class PostCategoryAdmin(BaseAdmin, ImportExportModelAdmin):
     list_display = (
         'title',
         'category_order',
@@ -133,7 +134,7 @@ class SearchedPostByKeywordAdmin(BaseAdmin):
 
 
 @register(ImageFile)
-class ImageFileAdmin(BaseAdmin):
+class ImageFileAdmin(BaseAdmin, ImportExportModelAdmin):
     list_display = (
         'img_preview',
         'file_name',
@@ -142,7 +143,7 @@ class ImageFileAdmin(BaseAdmin):
 
 
 @register(ImagePost)
-class ImagePostAdmin(BaseAdmin):
+class ImagePostAdmin(BaseAdmin, ImportExportModelAdmin):
     list_display = (
         'post_id',
         'title',
