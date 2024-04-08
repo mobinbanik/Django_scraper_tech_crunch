@@ -2,23 +2,18 @@ import os
 
 from celery import Celery
 
-
 # Set the default Django settings module for the 'celery' program.
 from django.conf import settings
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'good_reads_scraper_with_django.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'techcrunch_scraper.settings')
 
-app = Celery('good_reads_scraper_with_django', broker=settings.CELERY_BROKER_URL)
+app = Celery('techcrunch_scraper', broker=settings.CELERY_BROKER_URL)
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
-    'every-60-seconds-scrape-remain-book-search-items': {
-        'task': 'goodread.tasks.good_reads_scrape_remain_book_search_item',
-        'schedule': 60,  # In Second
-    },
-    'every-60-seconds-scrape-remain-group-search-items': {
-        'task': 'goodread.tasks.good_reads_scrape_remain_group_search_item',
+    'every-60-seconds-scrape-remain-post-search-items': {
+        'task': 'techcrunch.tasks.tech_crunch_scrape_remain_post_search_item',
         'schedule': 60,  # In Second
     },
 }
@@ -27,5 +22,5 @@ app.conf.beat_schedule = {
 app.autodiscover_tasks()
 
 
-# celery -A good_reads_scraper_with_django worker -l INFO -P eventlet
-# celery -A good_reads_scraper_with_django beat --loglevel=INFO
+# celery -A techcrunch_scraper worker -l INFO -P eventlet
+# celery -A techcrunch_scraper beat --loglevel=INFO

@@ -18,8 +18,9 @@ from .models import (
 
 class ScraperHandler:
     def __init__(self):
+        print("Initializing ScraperHandler")
         # TODO: ADD LOG
-        log = logging.log()
+        # logging
 
     @staticmethod
     def send_request(url) -> requests.Response:
@@ -116,16 +117,24 @@ class ScraperHandler:
                     soup,
                 )
 
+        # TODO: Without Celery
         for search_item in search_items:
             try:
-                self.get_json_and_create_post_by_slug(search_item.post_slug)
+                post = self.get_json_and_create_post_by_slug(
+                    search_item.post_slug
+                )
+                search_item.post = post
+                search_item.is_scraped = True
+                search_item.save()
             except Exception as e:
                 FailedSearchedPosts.objects.create(
                     title=search_item.title,
                     error_text=e.__str__(),
                     searched_new_posts=search_item,
                 )
+                # TODO: add log
                 print(e)
+        return search_items
 
     def extract_search_items(self, search_by_keyword, soup) -> SearchedPostByKeyword:
         search_items = list()
@@ -141,7 +150,6 @@ class ScraperHandler:
                     post_slug=slug,
                     url=url,
                     searched_by_keyword=search_by_keyword,
-                    # TODO: ADD URL FOR THUMBNAIL
                 )
             )
             print(i, ':', title)
@@ -160,7 +168,7 @@ class ScraperHandler:
         if response.status_code == 200:
             post_js = response.json()
             post_js = post_js[0]
-            self.parse_post_json(post_js)
+            return self.parse_post_json(post_js)
         else:
             raise Exception('status code:', response.status_code)
 
@@ -220,16 +228,20 @@ class ScraperHandler:
         scraped_post, created = ScrapedPosts.objects.get_or_create(
             slug=slug,
         )
+        print('()'*100)
+        print(scraped_post)
         if created:
             categories = post_js['categories']
+            print('<>' * 100)
+            print(categories)
             for category_id in categories:
                 category = Category.objects.get(
                     tech_crunch_id=category_id,
                 )
-            scraped_post_category, _ = ScrapedPostsCategory.objects.get_or_create(
-                scraped_post=scraped_post,
-                category=category,
-            )
+                scraped_post_category, _ = ScrapedPostsCategory.objects.get_or_create(
+                    scraped_post=scraped_post,
+                    category=category,
+                )
         return post
 
     @staticmethod

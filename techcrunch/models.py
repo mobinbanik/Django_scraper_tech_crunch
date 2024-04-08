@@ -216,7 +216,7 @@ class ScrapedPosts(BaseModel):
 
 
 class ScrapedPostsCategory(BaseModel):
-    scraped_posts = models.ForeignKey(
+    scraped_post = models.ForeignKey(
         ScrapedPosts, on_delete=models.CASCADE, related_name="category"
     )
     category = models.ForeignKey(

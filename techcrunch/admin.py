@@ -22,9 +22,6 @@ from .models import (
 
 # Register your models here.
 class BaseAdmin(admin.ModelAdmin):
-    # list_display = (
-    #     'is_active',
-    # )
     actions = ['activate', 'deactivate']
 
     @admin.action
@@ -210,11 +207,17 @@ class ScrapedPostsAdmin(BaseAdmin):
 
 @register(ScrapedPostsCategory)
 class ScrapedPostsCategoryAdmin(BaseAdmin):
+    list_display = (
+        'scraped_post',
+        'category',
+        'created_at',
+    )
+
     list_filter = (
         'category__name',
     )
     search_fields = (
         'category__name',
-        'scraped_posts__slug',
+        'scraped_post__slug',
     )
 

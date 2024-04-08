@@ -1,9 +1,10 @@
 from django.shortcuts import render, HttpResponse
+from django.conf import settings
 
 from .forms import SearchByKeywordForm, CategoryUpdateForm
-from .models import Keyword, SearchedKeyword
+from .tasks import tech_crunch_search_by_keyword_task
 from .scraper_handler import ScraperHandler
-from django.conf import settings
+from .models import Keyword, SearchedKeyword
 
 
 # Create your views here.
@@ -12,18 +13,28 @@ def search_by_keyword_view(request):
         form = SearchByKeywordForm(request.POST)
         if form.is_valid():
             keyword_text = '+'.join(form.cleaned_data['keyword'].split(' '))
+            page_count = form.cleaned_data['page_count']
 
+            # TODO: Without Celery
             keyword, _ = Keyword.objects.get_or_create(
                 title=keyword_text,
             )
             search_by_keyword_instance = SearchedKeyword.objects.create(
                 keyword=keyword,
-                page_count=form.cleaned_data['page_count']
+                page_count=page_count,
             )
 
             scraper_handler = ScraperHandler()
 
-            scraper_handler.search_by_keyword(search_by_keyword_instance)
+            scraped_item_count = len(
+                scraper_handler.search_by_keyword(search_by_keyword_instance)
+            )
+
+            # TODO: With Celery
+            # tech_crunch_search_by_keyword_task.delay(
+            #     keyword=keyword_text,
+            #     page_count=page_count,
+            # )
 
             return render(request, 'techcrunch/search.html', {'form': form})
 
