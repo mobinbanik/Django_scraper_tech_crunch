@@ -11,7 +11,7 @@ def tech_crunch_search_by_keyword_task(
         keyword: str,
         page_count=settings.DEFAULT_SEARCH_PAGE_COUNT_TECH_CRUNCH,
 ):
-    print(f'good_reads_search_by_keyword_task => {keyword} Started')
+    print(f'tech_crunch_search_by_keyword_task => {keyword} Started')
 
     keyword, _ = Keyword.objects.get_or_create(
         title=keyword,
@@ -26,7 +26,7 @@ def tech_crunch_search_by_keyword_task(
     scraped_item_count = len(
         scraper_handler.search_by_keyword(search_by_keyword_instance)
     )
-    print(f'good_reads_search_by_keyword_task => {keyword} finished')
+    print(f'tech_crunch_search_by_keyword_task => {keyword} finished')
 
     return {
         'keyword': keyword.title,
@@ -38,7 +38,7 @@ def tech_crunch_search_by_keyword_task(
 
 @shared_task()
 def tech_crunch_scrape_remain_post_search_item():
-    print('good_reads_scrape_remain_book_search_item => Started')
+    print('tech_crunch_scrape_remain_post_search_item => Started')
 
     post_search_items = SearchedPostByKeyword.objects.filter(
         is_scraped=False,
@@ -67,10 +67,35 @@ def tech_crunch_scrape_remain_post_search_item():
             print(e)
 
     print(new_scraped_item)
-    print('good_reads_scrape_remain_book_search_item => finished')
+    print('tech_crunch_scrape_remain_post_search_item => finished')
 
     return {
         'new_scraped_item_count': len(new_scraped_item),
+        'status': 'finished',
+    }
+
+
+@shared_task()
+def tech_crunch_create_or_update_all_categories():
+    print('tech_crunch_create_or_update_all_categories => Started')
+    scraper_handler = ScraperHandler()
+    created, updated = scraper_handler.create_or_update_category_list(settings.DEFAULT_CATEGORY_COUNT_UPDATE)
+    print('tech_crunch_create_or_update_all_categories => Started')
+    return {
+        'category_created_count': created,
+        'category_updated_count': updated,
+        'status': 'finished',
+    }
+
+
+@shared_task()
+def tech_crunch_update_posts_for_all_categories():
+    print('tech_crunch_update_posts_for_all_categories => Started')
+    scraper_handler = ScraperHandler()
+    count = scraper_handler.update_posts_for_all_categories()
+    print('tech_crunch_update_posts_for_all_categories => Started')
+    return {
+        'post_count': count,
         'status': 'finished',
     }
 

@@ -24,7 +24,7 @@ class ScraperHandler:
 
     @staticmethod
     def send_request(url) -> requests.Response:
-        print('URL: ', url)
+        print(f'URL: {url}')
         return requests.get(url)
 
     def get_category_json_from_tech_crunch(self, category: Category):
@@ -42,21 +42,24 @@ class ScraperHandler:
             )
         )
         categories = response.json()
-
+        upd, cre = 0, 0
         for category in categories:
             print(type(category["slug"]))
             cat, created = Category.objects.get_or_create(
                 slug=category["slug"],
             )
             if created:
+                cre += 1
                 cat.name = category["name"]
                 cat.tech_crunch_id = category["id"]
                 cat.description = category["description"]
                 cat.json = category
                 cat.save()
             elif not created:
+                upd += 1
                 cat.json = category
                 cat.save()
+        return cre, upd
 
     def update_posts_for_all_categories(self):
         categories = Category.objects.all()
@@ -66,13 +69,14 @@ class ScraperHandler:
                 title=category.name,
             )
             try:
-                self.update_posts_for_one_category(category, daily_search)
+                return self.update_posts_for_one_category(category, daily_search)
             except Exception as e:
                 FailedCategoryNewPosts.objects.create(
                     daily_search=daily_search,
                     title=category.name,
                     error_text=e.__str__(),
                 )
+                return -1
 
     def update_posts_for_one_category(self, category, daily_search: DailySearch):
         cat_js = self.get_category_json_from_tech_crunch(category)
@@ -89,7 +93,9 @@ class ScraperHandler:
                 )
             )
             posts = response.json()
+            count = 0
             for post in posts:
+                count += 1
                 temp_post = self.parse_post_json(post)
                 PostDailySearch.objects.create(
                     daily_search=daily_search,
@@ -97,6 +103,7 @@ class ScraperHandler:
                 )
             category.json = cat_js
             category.save()
+            return count
 
     def search_by_keyword(self, search_by_keyword: SearchedKeyword):
         search_items = list()
@@ -118,22 +125,22 @@ class ScraperHandler:
                 )
 
         # TODO: Without Celery
-        for search_item in search_items:
-            try:
-                post = self.get_json_and_create_post_by_slug(
-                    search_item.post_slug
-                )
-                search_item.post = post
-                search_item.is_scraped = True
-                search_item.save()
-            except Exception as e:
-                FailedSearchedPosts.objects.create(
-                    title=search_item.title,
-                    error_text=e.__str__(),
-                    searched_new_posts=search_item,
-                )
-                # TODO: add log
-                print(e)
+        # for search_item in search_items:
+        #     try:
+        #         post = self.get_json_and_create_post_by_slug(
+        #             search_item.post_slug
+        #         )
+        #         search_item.post = post
+        #         search_item.is_scraped = True
+        #         search_item.save()
+        #     except Exception as e:
+        #         FailedSearchedPosts.objects.create(
+        #             title=search_item.title,
+        #             error_text=e.__str__(),
+        #             searched_new_posts=search_item,
+        #         )
+        #         # TODO: add log
+        #         print(e)
         return search_items
 
     def extract_search_items(self, search_by_keyword, soup) -> SearchedPostByKeyword:
@@ -182,18 +189,19 @@ class ScraperHandler:
         json = post_js
         # Get or create author
         author_js = post_js['_embedded']['author'][0]
-        author, _ = Author.objects.get_or_create(
-            full_name=author_js['name'],
-            twitter_account=author_js['twitter'],
-            json=author_js,
+        author, created = Author.objects.get_or_create(
             slug=author_js['slug'],
         )
+        if created:
+            author.full_name = author_js['name']
+            author.twitter_account = author_js['twitter']
+            author.json = author_js
+            author.save()
         # Get ot create thumbnail
         thumbnail_url = post_js['_embedded']['wp:featuredmedia'][0]['source_url']
         thumbnail, _ = ImageFile.objects.get_or_create(
             url=thumbnail_url,
             file_name=self.parse_image_name_from_url(thumbnail_url),
-            post_id=id,
             is_scraped=False,
         )
         self.get_image_file_from_url(thumbnail_url, thumbnail)
