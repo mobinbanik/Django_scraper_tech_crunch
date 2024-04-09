@@ -17,6 +17,7 @@ def tech_crunch_search_by_keyword_task(
         title=keyword,
     )
     search_by_keyword_instance = SearchedKeyword.objects.create(
+        title=keyword.title,
         keyword=keyword,
         page_count=page_count,
     )
@@ -80,7 +81,7 @@ def tech_crunch_create_or_update_all_categories():
     print('tech_crunch_create_or_update_all_categories => Started')
     scraper_handler = ScraperHandler()
     created, updated = scraper_handler.create_or_update_category_list(settings.DEFAULT_CATEGORY_COUNT_UPDATE)
-    print('tech_crunch_create_or_update_all_categories => Started')
+    print('tech_crunch_create_or_update_all_categories => finished')
     return {
         'category_created_count': created,
         'category_updated_count': updated,
@@ -93,7 +94,7 @@ def tech_crunch_update_posts_for_all_categories():
     print('tech_crunch_update_posts_for_all_categories => Started')
     scraper_handler = ScraperHandler()
     count = scraper_handler.update_posts_for_all_categories()
-    print('tech_crunch_update_posts_for_all_categories => Started')
+    print('tech_crunch_update_posts_for_all_categories => finished')
     return {
         'post_count': count,
         'status': 'finished',

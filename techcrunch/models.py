@@ -166,6 +166,7 @@ class Keyword(BaseModel):
 
 
 class SearchedKeyword(BaseModel):
+    title = models.CharField(max_length=255, null=True, blank=True)
     page_count = models.IntegerField(null=False, blank=False, default=3)
     keyword = models.ForeignKey(
         Keyword, on_delete=models.CASCADE, related_name="searched_keyword",
@@ -207,7 +208,7 @@ class DailySearch(BaseModel):
     title = models.CharField(max_length=255, null=False, blank=False)
 
     def __str__(self):
-        return self.category.name + " - " + self.created_at
+        return self.category.name + " - " + str(self.created_at)
 
     class Meta:
         verbose_name = 'Daily Search'

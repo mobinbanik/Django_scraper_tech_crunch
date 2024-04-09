@@ -18,13 +18,11 @@ from .models import (
 
 class ScraperHandler:
     def __init__(self):
-        print("Initializing ScraperHandler")
-        # TODO: ADD LOG
-        # logging
+        print("--Initializing ScraperHandler--")
 
     @staticmethod
     def send_request(url) -> requests.Response:
-        print(f'URL: {url}')
+        print(f'send request -> URL: {url}')
         return requests.get(url)
 
     def get_category_json_from_tech_crunch(self, category: Category):
@@ -44,7 +42,6 @@ class ScraperHandler:
         categories = response.json()
         upd, cre = 0, 0
         for category in categories:
-            print(type(category["slug"]))
             cat, created = Category.objects.get_or_create(
                 slug=category["slug"],
             )
@@ -55,13 +52,17 @@ class ScraperHandler:
                 cat.description = category["description"]
                 cat.json = category
                 cat.save()
+                print(f'{cat.name} was created.')
             elif not created:
                 upd += 1
                 cat.json = category
                 cat.save()
+                print(f'{cat.name} was updated.')
         return cre, upd
 
     def update_posts_for_all_categories(self):
+        count = 0
+        flag = True
         categories = Category.objects.all()
         for category in categories:
             daily_search = DailySearch.objects.create(
@@ -69,19 +70,33 @@ class ScraperHandler:
                 title=category.name,
             )
             try:
-                return self.update_posts_for_one_category(category, daily_search)
+                count += self.update_posts_for_one_category(category, daily_search)
             except Exception as e:
                 FailedCategoryNewPosts.objects.create(
                     daily_search=daily_search,
                     title=category.name,
                     error_text=e.__str__(),
                 )
-                return -1
+                flag = False
+                print('*'*50)
+                print(e)
+                print('*'*50)
+            else:
+                daily_search.is_complete = True
+                daily_search.save()
+                flag = True
+            finally:
+                if flag is True:
+                    if count == 0:
+                        print(f"{category.name} category does not need to be updated...")
+                    else:
+                        print(f"{category.name} category has been updated.")
+        return count
 
     def update_posts_for_one_category(self, category, daily_search: DailySearch):
+        count = 0
         cat_js = self.get_category_json_from_tech_crunch(category)
         post_count_to_get = cat_js["count"] - category.online_post_count()
-        print(post_count_to_get)
         if post_count_to_get > 0:
             response = self.send_request(
                 settings.POST_BY_CATEGORY_URL_TECH_CRUNCH.format(
@@ -103,7 +118,8 @@ class ScraperHandler:
                 )
             category.json = cat_js
             category.save()
-            return count
+            print(f"{category.name}.json updated...")
+        return count
 
     def search_by_keyword(self, search_by_keyword: SearchedKeyword):
         search_items = list()
@@ -160,11 +176,10 @@ class ScraperHandler:
                 )
             )
             print(i, ':', title)
-            print(slug)
         return search_items
 
     def get_json_and_create_post_by_slug(self, slug):
-        print('GET A POST:')
+        print('__GET A POST__')
         response = self.send_request(
             settings.POST_JSON_URL_BY_SLUG_TECH_CRUNCH.format(
                 slug=slug,
@@ -236,12 +251,8 @@ class ScraperHandler:
         scraped_post, created = ScrapedPosts.objects.get_or_create(
             slug=slug,
         )
-        print('()'*100)
-        print(scraped_post)
         if created:
             categories = post_js['categories']
-            print('<>' * 100)
-            print(categories)
             for category_id in categories:
                 category = Category.objects.get(
                     tech_crunch_id=category_id,
@@ -260,9 +271,6 @@ class ScraperHandler:
     @staticmethod
     def parse_image_name_from_url(url) -> str:
         name = re.findall('//techcrunch.com/.*/(.*\.[a-z]*).*$', url)
-        print(1000*'"')
-        print(name)
-        print(url)
         return name[0]
 
     def extract_image_from_content(self, content: str, post: Post):
@@ -282,11 +290,12 @@ class ScraperHandler:
                 post=post,
                 image=image_file,
                 image_order=i,
-                title=post.title,
+                title=image_file.file_name,
             )
 
     @staticmethod
     def get_image_file_from_url(url: str, image_file: ImageFile):
+        print(f'Downloading: {image_file.file_name}')
         response = requests.get(url)
         img_temp = NamedTemporaryFile(delete=True)
         img_temp.write(response.content)
@@ -299,6 +308,7 @@ class ScraperHandler:
         image_file.local_path = image_file.image.path
         image_file.save()
         img_temp.close()
+        print(f'Downloaded.')
 
     def __str__(self):
         return "Scraper"

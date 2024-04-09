@@ -16,8 +16,11 @@ app.conf.beat_schedule = {
         'task': 'techcrunch.tasks.tech_crunch_scrape_remain_post_search_item',
         'schedule': 60,  # In Second
     },
+    'every-day-update-categories': {
+        'task': 'techcrunch.tasks.tech_crunch_update_posts_for_all_categories',
+        'schedule': 86400,  # In Second: one day
+    },
 }
-
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
 

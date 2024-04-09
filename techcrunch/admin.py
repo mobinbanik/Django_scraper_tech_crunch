@@ -157,8 +157,9 @@ class ImagePostAdmin(BaseAdmin, ImportExportModelAdmin):
 @register(DailySearch)
 class DailySearchAdmin(BaseAdmin):
     list_display = (
-        'is_complete',
+        'title',
         'created_at',
+        'is_complete',
     )
     list_filter = (
         'is_complete',
