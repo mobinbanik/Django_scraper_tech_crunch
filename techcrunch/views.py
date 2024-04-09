@@ -1,3 +1,8 @@
+import io
+import urllib
+import base64
+
+import matplotlib.pyplot as plt
 from django.shortcuts import render, HttpResponse
 from django.conf import settings
 
@@ -8,7 +13,7 @@ from .tasks import (
     tech_crunch_update_posts_for_all_categories,
 )
 from .scraper_handler import ScraperHandler
-from .models import Keyword, SearchedKeyword
+from .models import Keyword, SearchedKeyword, Category, Post, PostCategory
 
 
 # Create your views here.
@@ -73,3 +78,25 @@ def check(request):
         tech_crunch_update_posts_for_all_categories.delay()
 
         return HttpResponse('done!')
+
+
+def plot_view(request):
+    categories = Category.objects.all()
+    categories_name = list()
+    categories_count = list()
+    for category in categories:
+        categories_name.append(category.name)
+        post = PostCategory.objects.filter(category=category)
+        categories_count.append(len(post))
+
+    plt.bar(categories_name, categories_count)
+    fig = plt.gcf()
+
+    # Convert graph into string buffer then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri = urllib.parse.quote(string)
+
+    return render(request, 'techcrunch/plot.html', {'data': uri})

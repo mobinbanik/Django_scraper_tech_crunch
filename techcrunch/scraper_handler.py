@@ -175,7 +175,7 @@ class ScraperHandler:
                     searched_by_keyword=search_by_keyword,
                 )
             )
-            print(i, ':', title)
+            print(f'{i}:{title}')
         return search_items
 
     def get_json_and_create_post_by_slug(self, slug):
